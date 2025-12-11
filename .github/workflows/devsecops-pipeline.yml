@@ -1,0 +1,28 @@
+name: DevSecOps Guvenlik Taramasi
+
+# TETİKLEYİCİ: Bu robot ne zaman çalışsın?
+# 'main' dalına her kod yollandığında (push) çalışsın.
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  # GÖREV 1: Guvenlik Taramasi
+  guvenlik-taramasi:
+    # Bu görev GitHub'ın sunduğu en son sürüm Ubuntu sunucuda çalışsın
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Adım: Bizim depomuzdaki kodları sunucuya indir (Checkout)
+      - name: Kodlari Getir
+        uses: actions/checkout@v3
+
+      # 2. Adım: Trivy aracını kur ve dosyaları tara
+      - name: Trivy Dosya Taramasi
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'            # fs = File System (Dosyaları tara)
+          scan-ref: '.'              # Şu anki klasörü (.) tara
+          format: 'table'            # Sonucu tablo olarak göster
+          exit-code: '0'             # Açık bulsan bile işlemi kırmızı yapıp durdurma (Şimdilik sadece raporla)
+          severity: 'CRITICAL,HIGH'  # Sadece Kritik ve Yüksek riskleri raporla
