@@ -1,28 +1,45 @@
-name: DevSecOps Guvenlik Taramasi
+name: DevSecOps Full Pipeline
 
-# TETİKLEYİCİ: Bu robot ne zaman çalışsın?
-# 'main' dalına her kod yollandığında (push) çalışsın.
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  # GÖREV 1: Guvenlik Taramasi
   guvenlik-taramasi:
-    # Bu görev GitHub'ın sunduğu en son sürüm Ubuntu sunucuda çalışsın
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Adım: Bizim depomuzdaki kodları sunucuya indir (Checkout)
+      # 1. Kodları Getir
       - name: Kodlari Getir
         uses: actions/checkout@v3
 
-      # 2. Adım: Trivy aracını kur ve dosyaları tara
-      - name: Trivy Dosya Taramasi
+      # 2. Trivy ile Dosya/Kütüphane Taraması (SCA)
+      - name: Trivy Dosya Taramasi (SCA)
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'            # fs = File System (Dosyaları tara)
-          scan-ref: '.'              # Şu anki klasörü (.) tara
-          format: 'table'            # Sonucu tablo olarak göster
-          exit-code: '0'             # Açık bulsan bile işlemi kırmızı yapıp durdurma (Şimdilik sadece raporla)
-          severity: 'CRITICAL,HIGH'  # Sadece Kritik ve Yüksek riskleri raporla
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+
+      # 3. Hedef Sistemi Ayaga Kaldir (DVWA)
+      - name: Hedef Uygulamayi Baslat (Docker)
+        run: |
+          docker pull vulnerables/web-dvwa
+          docker run -d -p 80:80 vulnerables/web-dvwa
+          sleep 10  # Sitenin veritabanı kendine gelsin diye 10 saniye bekle
+
+      # 4. ZAP ile Dinamik Saldiri Yap (DAST)
+      - name: OWASP ZAP Taramasi (DAST)
+        run: |
+          chmod 777 $(pwd) # Rapor yazılabilsin diye klasöre izin ver
+          docker run --network host -v $(pwd):/zap/wrk/:rw -t zaproxy/zap-stable zap-baseline.py -t http://localhost -r zap_report.html
+        continue-on-error: true # Hata bulsa bile pipeline durmasın, raporu alalım
+
+      # 5. Raporu GitHub'a Yukle (Artifact)
+      - name: ZAP Raporunu Yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZAP-Guvenlik-Raporu
+          path: zap_report.html
