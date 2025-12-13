@@ -33,8 +33,9 @@ jobs:
       # 4. ZAP ile Dinamik Saldiri Yap (DAST)
       - name: OWASP ZAP Taramasi (DAST)
         run: |
-          chmod 777 $(pwd) # Rapor yazılabilsin diye klasöre izin ver
-          docker run --network host -v $(pwd):/zap/wrk/:rw -t zaproxy/zap-stable zap-baseline.py -t http://localhost -r zap_report.html
+          chmod 777 $(pwd) # Rapor yazılabilsin diye klasöre izin ver 
+          # Ekstra olarak docker run a root yetkisi verdim zap yazarken sıkıntı olmasın diye
+          docker run -u 0 --network host -v $(pwd):/zap/wrk/:rw -t zaproxy/zap-stable zap-baseline.py -t http://localhost -r zap_report.html
         continue-on-error: true # Hata bulsa bile pipeline durmasın, raporu alalım
 
       # 5. Raporu GitHub'a Yukle (Artifact)
