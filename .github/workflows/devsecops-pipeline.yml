@@ -13,7 +13,14 @@ jobs:
       - name: Kodlari Getir
         uses: actions/checkout@v3
 
-      # 2. Trivy ile Dosya/Kütüphane Taraması (SCA)
+      # 2. SAST - Semgrep ile Kod Analizi (YENİ EKLENDİ) 🛡️
+      - name: Semgrep SAST Analizi
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/python # Sadece Python kuralları (Hızlı olsun)
+          # config: p/default # İstersen genel kuralları da açabilirsin
+
+      # 3. SCA - Trivy ile Kütüphane Taraması
       - name: Trivy Dosya Taramasi (SCA)
         uses: aquasecurity/trivy-action@master
         with:
@@ -23,22 +30,21 @@ jobs:
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
 
-      # 3. Hedef Sistemi Ayaga Kaldir (DVWA)
+      # 4. Hedef Sistemi Ayaga Kaldir (DVWA)
       - name: Hedef Uygulamayi Baslat (Docker)
         run: |
           docker pull vulnerables/web-dvwa
           docker run -d -p 80:80 vulnerables/web-dvwa
-          sleep 10  # Sitenin veritabanı kendine gelsin diye 10 saniye bekle
+          sleep 10 
 
-      # 4. ZAP ile Dinamik Saldiri Yap (DAST)
+      # 5. DAST - OWASP ZAP Taraması
       - name: OWASP ZAP Taramasi (DAST)
         run: |
-          chmod 777 $(pwd) # Rapor yazılabilsin diye klasöre izin ver 
-          # Ekstra olarak docker run a root yetkisi verdim zap yazarken sıkıntı olmasın diye
+          chmod 777 $(pwd)
           docker run -u 0 --network host -v $(pwd):/zap/wrk/:rw -t zaproxy/zap-stable zap-baseline.py -t http://localhost -r zap_report.html
-        continue-on-error: true # Hata bulsa bile pipeline durmasın, raporu alalım
+        continue-on-error: true
 
-      # 5. Raporu GitHub'a Yukle (Artifact)
+      # 6. Raporu Yukle
       - name: ZAP Raporunu Yukle
         uses: actions/upload-artifact@v4
         with:

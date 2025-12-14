@@ -18,3 +18,14 @@ except:
     sys.exit()
 print("-" * 50)
 print("Tarama Bitti.")
+
+# GUVENLIK TESTI ICIN EKLENEN HATALI KODLAR
+def baglan():
+    # HATA 1: Hardcoded Password (Şifreyi açık açık yazmak)
+    sifre = "123456" 
+
+    # HATA 2: MD5 Kullanımı (Kırılması kolay, güvensiz şifreleme)
+    import hashlib
+    hash_obj = hashlib.md5(b"gizli_bilgi")
+
+    print("Baglanti yapiliyor..." + sifre)
